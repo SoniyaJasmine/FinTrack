@@ -1,0 +1,28 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+
+<div class="card">
+    <h2>GST Report</h2>
+    <p style="margin: 12px 0 25px; color: #64748b;">
+        Select an optional date range or category to download a GST summary.
+    </p>
+
+    <form method="GET">
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                    <p style="color: red;">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn">Download GST Report</button>
+    </form>
+</div>
+
+{% endblock %}

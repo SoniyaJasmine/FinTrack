@@ -1,0 +1,59 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+
+<h1>Categorize Transactions</h1>
+<p style="color: #64748b; margin-top: 8px;">
+    Assign a category to each transaction, then save your changes.
+</p>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
+
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in formset %}
+                    <tr>
+                        <td>{{ form.instance.date|date:"d M Y" }}</td>
+                        <td>{{ form.instance.description }}</td>
+                        <td>{{ form.instance.type }}</td>
+                        <td>₹{{ form.instance.amount|floatformat:2 }}</td>
+                        <td>
+                            {{ form.id }}
+                            {{ form.category }}
+                            {% for error in form.category.errors %}
+                                <p style="color: red;">{{ error }}</p>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center;">
+                            No transactions found.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if formset.forms %}
+        <button type="submit" class="btn" style="margin-top: 20px;">
+            Save Categories
+        </button>
+    {% endif %}
+</form>
+
+{% endblock %}

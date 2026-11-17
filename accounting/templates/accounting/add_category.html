@@ -1,0 +1,26 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+
+<div class="card">
+    <h2>Add Category</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}
+                    <p style="color: red;">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn">Save Category</button>
+    </form>
+</div>
+
+{% endblock %}

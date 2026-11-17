@@ -1,0 +1,173 @@
+{% extends 'accounting/base.html' %}
+
+{% block content %}
+
+<h1>Financial Insights</h1>
+<p style="color: #64748b; margin-top: 8px;">
+    Local analysis of transactions from {{ period_start|date:"M Y" }}
+    through {{ period_end|date:"d M Y" }}.
+</p>
+<p style="color: #64748b; margin-top: 5px;">
+    Forecasts use the last three completed months' spending average and are estimates, not
+    financial advice. Your transaction data stays in this application.
+</p>
+
+<div class="summary">
+    <div class="card">
+        <h3>Spending forecast</h3>
+        {% if predictions %}
+            {% for prediction in predictions %}
+                <p style="font-size: 16px; margin-top: 8px;">
+                    {{ prediction.month }}: INR {{ prediction.amount|floatformat:2 }}
+                </p>
+            {% endfor %}
+        {% else %}
+            <p style="font-size: 16px;">Not available yet</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Insights</h3>
+        <ul style="padding-left: 20px; margin-top: 12px;">
+            {% for insight in insights %}
+                <li style="margin-bottom: 8px;">{{ insight }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <h3>Recommendations</h3>
+        <ul style="padding-left: 20px; margin-top: 12px;">
+            {% for recommendation in recommendations %}
+                <li style="margin-bottom: 8px;">{{ recommendation }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Monthly Spending Trend</h2>
+    {% if has_history %}
+        <canvas id="spending-chart"
+                style="display: block; width: 100%;"
+                aria-label="Monthly spending and forecast chart"></canvas>
+    {% else %}
+        <p style="margin-top: 12px; color: #64748b;">
+            Add transactions to display the spending chart.
+        </p>
+    {% endif %}
+</div>
+
+{{ chart_data|json_script:"analytics-chart-data" }}
+
+{% if has_history %}
+<script>
+    (function () {
+        const chartData = JSON.parse(
+            document.getElementById('analytics-chart-data').textContent
+        );
+        const canvas = document.getElementById('spending-chart');
+        const context = canvas.getContext('2d');
+        const ratio = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth;
+        const height = 340;
+        const padding = { top: 24, right: 24, bottom: 58, left: 72 };
+        const values = chartData.historical_expenses
+            .concat(chartData.predicted_expenses)
+            .filter(value => value !== null);
+        const maxValue = Math.max(1, ...values) * 1.15;
+        const plotWidth = width - padding.left - padding.right;
+        const plotHeight = height - padding.top - padding.bottom;
+
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        canvas.style.height = height + 'px';
+        context.scale(ratio, ratio);
+        context.font = '12px Arial';
+        context.strokeStyle = '#cbd5e1';
+        context.fillStyle = '#475569';
+        context.lineWidth = 1;
+
+        for (let tick = 0; tick <= 4; tick += 1) {
+            const y = padding.top + plotHeight * tick / 4;
+            const amount = maxValue * (4 - tick) / 4;
+            context.beginPath();
+            context.moveTo(padding.left, y);
+            context.lineTo(width - padding.right, y);
+            context.stroke();
+            context.textAlign = 'right';
+            context.fillText(
+                'INR ' + amount.toLocaleString('en-IN', {
+                    maximumFractionDigits: 0
+                }),
+                padding.left - 8,
+                y + 4
+            );
+        }
+
+        const drawLine = (series, color, dashed) => {
+            context.beginPath();
+            context.strokeStyle = color;
+            context.lineWidth = 2;
+            context.setLineDash(dashed ? [6, 4] : []);
+            let started = false;
+
+            series.forEach((value, index) => {
+                if (value === null) {
+                    started = false;
+                    return;
+                }
+
+                const x = padding.left
+                    + plotWidth * index / (chartData.labels.length - 1);
+                const y = padding.top + plotHeight
+                    - plotHeight * value / maxValue;
+                if (!started) {
+                    context.moveTo(x, y);
+                    started = true;
+                } else {
+                    context.lineTo(x, y);
+                }
+            });
+
+            context.stroke();
+            context.setLineDash([]);
+        };
+
+        drawLine(chartData.historical_expenses, '#2563eb', false);
+        drawLine(chartData.predicted_expenses, '#dc2626', true);
+
+        const labelStep = Math.ceil(chartData.labels.length / 8);
+        context.fillStyle = '#475569';
+        context.textAlign = 'center';
+        chartData.labels.forEach((label, index) => {
+            if (index % labelStep === 0 || index === chartData.labels.length - 1) {
+                const x = padding.left
+                    + plotWidth * index / (chartData.labels.length - 1);
+                context.save();
+                context.translate(x, height - 20);
+                context.rotate(-Math.PI / 5);
+                context.fillText(label, 0, 0);
+                context.restore();
+            }
+        });
+
+        context.textAlign = 'left';
+        context.fillStyle = '#2563eb';
+        context.fillRect(padding.left, height - 8, 18, 3);
+        context.fillStyle = '#475569';
+        context.fillText('Historical', padding.left + 24, height - 4);
+        context.strokeStyle = '#dc2626';
+        context.setLineDash([6, 4]);
+        context.beginPath();
+        context.moveTo(padding.left + 112, height - 6);
+        context.lineTo(padding.left + 130, height - 6);
+        context.stroke();
+        context.setLineDash([]);
+        context.fillStyle = '#475569';
+        context.fillText('Forecast', padding.left + 136, height - 4);
+    }());
+</script>
+{% endif %}
+
+{% endblock %}
