@@ -29,15 +29,11 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.environ.get(
-        'DJANGO_ALLOWED_HOSTS',
-        'localhost,127.0.0.1'
-    ).split(',')
-    if host.strip()
-]
-
+ALLOWED_HOSTS = os.environ.get(
+    'fintrack-l2wn.onrender.com',
+    'ALLOWED_HOSTS',
+    '127.0.0.1,localhost'
+).split(',')
 
 # Application definition
 
@@ -105,7 +101,7 @@ else:
     }
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
+    'https://fintrack-l2wn.onrender.com',
 ]
 
 # Password validation
